@@ -12,11 +12,20 @@ var app;
         })
 })();
 
+app.run(['$document', '$window', function($document, $window) {
+    var document = $document[0];
+    document.addEventListener('click', function(event) {
+        var hasFocus = document.hasFocus();
+        if (!hasFocus) $window.focus();
+    });
+}]);
+
 app.controller('mainController', function ($scope, $mdToast) {
 
     function setLightSwitch(lightStatus) {
         console.log('got the light status : ' + lightStatus);
         $scope.smartLight.onSuccess('Connected with Smart Light');
+        $scope.smartLight.isConnect = true;
         if (lightStatus == 0) {
             smartLight.isOn = lightStatus;
         } else {
@@ -27,6 +36,7 @@ app.controller('mainController', function ($scope, $mdToast) {
 
 
     $scope.smartLight = smartLight;
+    $scope.smartLight.isConnect = false;
 
     $scope.smartLight.onSuccess = function (message) {
         $mdToast.show(

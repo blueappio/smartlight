@@ -50,14 +50,14 @@
             <div class="layout-wrap layout-row flex-100" layout="row" flex="100" layout-wrap="">
                 <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
                     <span>DIM</span>
-                    <md-slider min="0" max="255" ng-model="smartLight.dimValue" aria-label="red" id="red-slider" ng-value ="0" ng-change="dimSliderChange()">
+                    <md-slider min="0" max="255" ng-model="smartLight.dimValue" aria-label="red" id="red-slider" ng-value ="0" ng-change="dimSliderChange()" ng-disabled="smartLight.isConnect==false">
                     </md-slider>
                 </div>
                 <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
                     <md-list>
                         <md-list-item>
                             <p> Power Button : </p>
-                            <md-switch ng-model="smartLight.isOn" aria-label="Switch 1" ng-change="toggleSmartLight()">
+                            <md-switch ng-model="smartLight.isOn" aria-label="Switch 1" ng-change="toggleSmartLight()" ng-disabled="smartLight.isConnect==false">
                             </md-switch>
                         </md-list-item>
                     </md-list>
