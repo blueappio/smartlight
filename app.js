@@ -3,8 +3,8 @@ var app;
     app = angular.module('smartLight', ['ngMaterial'])
         .config(function ($mdThemingProvider) {
             $mdThemingProvider.theme('default')
-                .primaryPalette('blue')
-                .accentPalette('pink');
+                .primaryPalette('blue-grey')
+                .accentPalette('blue');
             $mdThemingProvider.theme('success-toast');
             $mdThemingProvider.theme('error-toast');
 
@@ -12,106 +12,122 @@ var app;
         })
 })();
 
-app.run(['$document', '$window', function($document, $window) {
+app.run(['$document', '$window', function ($document, $window) {
     var document = $document[0];
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         var hasFocus = document.hasFocus();
         if (!hasFocus) $window.focus();
     });
 }]);
 
-app.controller('mainController', function ($scope, $mdToast) {
+app.service('smartlightService', function () {
+    return new SmartLight(navigator.bluetooth);
+});
 
-    function setLightSwitch(lightStatus) {
-        console.log('got the light status : ' + lightStatus);
-        $scope.smartLight.onSuccess('Connected with Smart Light');
-        $scope.smartLight.isConnect = true;
-        if (lightStatus == 0) {
-            smartLight.isOn = lightStatus;
-        } else {
-            smartLight.isOn = true;
-        }
-        $scope.$apply();
-    }
+app.controller('mainController', function ($scope, $mdToast, $mdDialog, smartlightService) {
 
+    $scope.smartlight = smartlightService;
+    $scope.powerChanged = true;
 
-    $scope.smartLight = smartLight;
-    $scope.smartLight.isConnect = false;
-
-    $scope.smartLight.onSuccess = function (message) {
+    function goodToast(message) {
         $mdToast.show(
             $mdToast.simple()
-                .content(message)
-                .position('top right')
-                .hideDelay(2500)
+                .textContent(message)
+                .position('top')
                 .theme("success-toast")
+                .hideDelay(2500)
         );
     };
 
-    $scope.smartLight.onError = function (message) {
+    function badToast(message) {
         $mdToast.show(
             $mdToast.simple()
-                .content(message)
-                .position('top right')
+                .textContent(message)
+                .position('top')
+                .theme('error-toast')
                 .hideDelay(2500)
-                .theme("error-toast")
         );
+    };
+
+    function showLoadingIndicator($event, text) {
+        var parentEl = angular.element(document.body);
+        $mdDialog.show({
+            parent: parentEl,
+            targetEvent: $event,
+            clickOutsideToClose: false,
+            template: '<md-dialog style="width: 250px;top:95px;margin-top: -170px;" aria-label="loadingDialog" ng-cloak>' +
+            '<md-dialog-content>' +
+            '<div layout="row" layout-align="center" style="padding: 40px;">' +
+            '<div style="padding-bottom: 20px;">' +
+            '<md-progress-circular class="md-accent md-hue-1" md-mode="indeterminate" md-diameter="40" style="right: 20px;bottom: 10px;">' +
+            '</md-progress-circular>' +
+            '</div>' +
+            '</div>' +
+            '<div layout="row" layout-align="center" style="padding-bottom: 20px;">' +
+            '<label>' + text + '</label>' +
+            '</div>' +
+            '</md-dialog-content>' +
+            '</md-dialog>',
+            controller: DialogController
+        });
+
+        function DialogController($scope, $mdDialog) {
+            $scope.closeDialog = function () {
+                $mdDialog.hide();
+            }
+        }
+    }
+
+    function dismissLoadingIndicator() {
+        $mdDialog.cancel();
     };
 
     $scope.toggleSmartLight = function () {
-        $scope.smartLight.toggleSmartLight($scope.smartLight.isOn);
+        $scope.powerChanged = false;
+        $scope.smartlight.writeData($scope.smartlight.powerStatus, 'powerStatus')
+        .then(function(){
+            $scope.powerChanged = true;
+            $scope.$apply();
+        });
     };
 
     $scope.dimSliderChange = function () {
-        $scope.smartLight.setDimValue($scope.smartLight.dimValue);
+        $scope.smartlight.writeData($scope.smartlight.dimValue, 'dimValue');
     };
 
     $scope.lightNameChange = function () {
-        $scope.smartLight.setLightName($scope.smartLight.lightName);
+        if ($scope.smartlight.lightName != '')
+            $scope.smartlight.writeData($scope.smartlight.lightName, 'lightName');
     };
 
     $scope.roomNameChange = function () {
-        $scope.smartLight.setRoomName($scope.smartLight.roomName);
+        if ($scope.smartlight.roomName != '')
+            $scope.smartlight.writeData($scope.smartlight.roomName, 'roomName');
     };
 
     $scope.groupNameChange = function () {
-        $scope.smartLight.setGroupName($scope.smartLight.groupName);
+        if ($scope.smartlight.groupName != '')
+            $scope.smartlight.writeData($scope.smartlight.groupName, 'groupName');
     };
 
-    $scope.connectClick = function () {
-        $scope.smartLight.onSuccess('Connecting ....');
-        smartLight.connect().then(function () {
-            return smartLight.getPowerConsume().then(function (powerConsume) {
-                return smartLight.powerConsumed = powerConsume + ' Wh';
-            }).then(function () {
-                return smartLight.getLightName().then(function (lightName) {
-                    return smartLight.lightName = lightName;
-                }).then(function () {
-                    return smartLight.getRoomName().then(function (roomName) {
-                        return smartLight.roomName = roomName;
-                    }).then(function () {
-                        return smartLight.getGroupName().then(function (groupName) {
-                            return smartLight.groupName = groupName;
-                        }).then(function () {
-                            return smartLight.getDimValue().then(function (dimValue) {
-                                return smartLight.dimValue = dimValue;
-                            }).then(function () {
-                                return smartLight.getLightStatus().then(setLightSwitch);
-                            });
-                        });
-                    });
-                });
+    $scope.onConnect = function () {
+        showLoadingIndicator('', 'Connecting ....');
+        $scope.smartlight.connect()
+            .then(function () {
+                dismissLoadingIndicator();
+                goodToast('Connected...');
+            })
+            .catch(function (error) {
+                dismissLoadingIndicator();
+                console.error('Argh!', error, error.stack ? error.stack : '');
+                badToast('Unable to connect.');
             });
-        }).catch(function (error) {
-            console.error('Argh!', error, error.stack ? error.stack : '');
-        });
     }
 
-    if (navigator.bluetooth == undefined) {
-        console.log("No navigator.bluetooth found.");
-        $scope.smartLight.onError("No navigator.bluetooth found.");
+    if (!navigator.bluetooth) {
+        badToast('Bluetooth not supported, which is required.');
     } else if (navigator.bluetooth.referringDevice) {
-        $scope.connectClick();
+        $scope.onConnect();
     }
 
 });

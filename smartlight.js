@@ -1,188 +1,228 @@
-(function() {
-  'use strict';
+"use strict";
+var GATTIP = require('gatt-ip').GATTIP;
+
+var SmartLight = function () {
 
     var util = new Util();
 
-    var PUBLIC_SERVICE_UUID   = 0xFF10;
+    var PUBLIC_SERVICE_UUID = 0xff10;
 
-    var LIGHT_SWITCH_UUID   = 0xFF11;
-    var DIMMER_SETTING_UUID = 0xFF12;
-    var POWER_CONSUME_UUID  = 0xFF16;
-    var LIGHT_NAME_PUB_UUID = 0xFF17;
-    var GROUP_NAME_PUB_UUID = 0xFF18;
-    var ROOM_NAME_PUB_UUID  = 0xFF19;
-    var DISCONNECT_UUID     = 0xFF1A;
+    var LIGHT_STATUS_UUID = 0xff11;
+    var DIMMER_SETTING_UUID = 0xff12;
+    var POWER_CONSUME_UUID = 0xff16;
+    var LIGHT_NAME_PUB_UUID = 0xff17;
+    var GROUP_NAME_PUB_UUID = 0xff18;
+    var ROOM_NAME_PUB_UUID = 0xff19;
+    var DISCONNECT_UUID = 0xff1A;
 
-  class SmartLight {
-    constructor() {
-      this.isOn = '';
-      this.lightName = '';
-      this.roomName = '';
-      this.groupName = '';
-      this.dimValue = 0;
-      this.powerConsumed = '';
-      this.characteristics = new Map();
-      
-      if(!navigator.bluetooth) {
-      	console.error('bluetooth not supported');
-      }
+    function SmartLight(bluetooth) {
+        this.connected = false;
+
+        this.lightStatusCharacteristic = undefined;
+        this.dimmerSettingCharacteristic = undefined;
+        this.powerConsumeCharacteristic = undefined;
+        this.lightNameCharacteristic = undefined;
+        this.groupNameCharacteristic = undefined;
+        this.roomNameCharacteristic = undefined;
+
+        this.powerStatus = undefined;
+        this.dimValue = undefined;
+        this.powerConsumed = undefined;
+        this.lightName = undefined;
+        this.groupName = undefined;
+        this.roomName = undefined;
+
+        this.bluetooth = bluetooth;
+        this.bluetoothDevice = undefined;
     }
 
-    connect() {
-      var options = {filters:[{name: 'Smart Light',}]};
-      return navigator.bluetooth.requestDevice(options).then(function (device) {
-        window.smartLight.device = device;
-        return device.connectGATT();
-      }).then(function (server) {
-        window.smartLight.server = server;
-        return Promise.all([
-          server.getPrimaryService(PUBLIC_SERVICE_UUID).then(function (service) {
-          return Promise.all([
-            window.smartLight._cacheCharacteristic(service, LIGHT_SWITCH_UUID),
-            window.smartLight._cacheCharacteristic(service, DIMMER_SETTING_UUID),
-            window.smartLight._cacheCharacteristic(service, POWER_CONSUME_UUID),
-            window.smartLight._cacheCharacteristic(service, LIGHT_NAME_PUB_UUID),
-            window.smartLight._cacheCharacteristic(service, GROUP_NAME_PUB_UUID),
-            window.smartLight._cacheCharacteristic(service, ROOM_NAME_PUB_UUID),
-            window.smartLight._cacheCharacteristic(service, DISCONNECT_UUID)]);
-        })]);
-      });
+    SmartLight.prototype.connect = function connect() {
+        var self = this;
+
+        var options = {
+            filters: [{services: [PUBLIC_SERVICE_UUID]}],
+            optionalServices: [0x1800, 0x1801, 0x180A, PUBLIC_SERVICE_UUID, 0xff20, 0xff40, "f000ffc0-0451-4000-b000-000000000000"]
+        };
+
+        return this.bluetooth.requestDevice(options)
+            .then(function (device) {
+                self.bluetoothDevice = device;
+                return device.gatt.connect();
+            })
+            .then(function (server) {
+                server.getPrimaryService(PUBLIC_SERVICE_UUID)
+                    .then(function (service) {
+                        return Promise.all([
+                            service.getCharacteristic(LIGHT_STATUS_UUID)
+                                .then(function (characteristic) {
+                                    self.lightStatusCharacteristic = characteristic;
+                                    characteristic.readValue()
+                                        .then(function (data) {
+                                            data = data.buffer ? data : new DataView(data);
+                                            if (data.getUint8(0)) {
+                                                self.powerStatus = true;
+                                            }
+                                            else {
+                                                self.powerStatus = false;
+                                            }
+                                            console.log(self.powerStatus);
+                                        });
+                                }),
+                            service.getCharacteristic(DIMMER_SETTING_UUID)
+                                .then(function (characteristic) {
+                                    self.dimmerSettingCharacteristic = characteristic;
+                                    characteristic.readValue()
+                                        .then(function (data) {
+                                            data = data.buffer ? data : new DataView(data);
+                                            self.dimValue = data.getUint8(0);
+                                            console.log(self.dimValue);
+                                        });
+                                }),
+                            service.getCharacteristic(POWER_CONSUME_UUID)
+                                .then(function (characteristic) {
+                                    self.powerConsumeCharacteristic = characteristic;
+                                    characteristic.readValue()
+                                        .then(function (data) {
+                                            var value = '';
+                                            for (var i = 0; i < data.byteLength; i++) {
+                                                value = value + String.fromCharCode(data.getUint8(i));
+                                            }
+                                            value = value.trim();
+                                            self.powerConsumed = value + ' Wh';
+                                            console.log(self.powerConsumed);
+                                        });
+                                }),
+                            service.getCharacteristic(LIGHT_NAME_PUB_UUID)
+                                .then(function (characteristic) {
+                                    self.lightNameCharacteristic = characteristic;
+                                    characteristic.readValue()
+                                        .then(function (data) {
+                                            var value = '';
+                                            for (var i = 0; i < data.byteLength; i++) {
+                                                if (data.getUint8(i) != 0) {
+                                                    value = value + String.fromCharCode(data.getUint8(i));
+                                                }
+                                            }
+                                            value = value.trim();
+                                            self.lightName = value;
+                                            console.log(self.lightName);
+                                        });
+                                }),
+                            service.getCharacteristic(GROUP_NAME_PUB_UUID)
+                                .then(function (characteristic) {
+                                    self.groupNameCharacteristic = characteristic;
+                                    characteristic.readValue()
+                                        .then(function (data) {
+                                            var value = '';
+                                            for (var i = 0; i < data.byteLength; i++) {
+                                                if (data.getUint8(i) != 0) {
+                                                    value = value + String.fromCharCode(data.getUint8(i));
+                                                }
+                                            }
+                                            value = value.trim();
+                                            self.groupName = value;
+                                            console.log(self.groupName);
+                                        });
+                                }),
+                            service.getCharacteristic(ROOM_NAME_PUB_UUID)
+                                .then(function (characteristic) {
+                                    self.roomNameCharacteristic = characteristic;
+                                    characteristic.readValue()
+                                        .then(function (data) {
+                                            var value = '';
+                                            for (var i = 0; i < data.byteLength; i++) {
+                                                if (data.getUint8(i) != 0) {
+                                                    value = value + String.fromCharCode(data.getUint8(i));
+                                                }
+                                            }
+                                            value = value.trim();
+                                            self.roomName = value;
+                                            console.log(self.roomName);
+                                        });
+                                })
+                        ])
+                    }, function (error) {
+                        console.warn('PUBLIC_SERVICE_UUID Service not found');
+                    })
+            })
+            .then(function () {
+                self.connected = true;
+            });
     }
 
-    /* Smart Light Services */
-   
-    getLightStatus(){
-        return this._readCharacteristicValue(LIGHT_SWITCH_UUID)
-      .then(this._lightStatus);
-    };
-
-    toggleSmartLight(status){
-        if(status){
-            this.turnON();
-            setTimeout(function () {
-                smartLight.setDimValue(smartLight.dimValue);
-            }, 1000);
-        }else{
-            this.turnOFF();
-        }
-    };
-
-    turnON(){
-        var data = [0x01];
-        return this._writeCharacteristicValue(LIGHT_SWITCH_UUID, new Uint8Array(data));
-    };
-
-    turnOFF(){
-        var data = [0x00];
-        return this._writeCharacteristicValue(LIGHT_SWITCH_UUID, new Uint8Array(data));
-    };
-
-    setDimValue(dimValue){
-        var data = [dimValue];
-        return this._writeCharacteristicValue(DIMMER_SETTING_UUID, new Uint8Array(data));
-    };
-
-    getDimValue(){
-        return this._readCharacteristicValue(DIMMER_SETTING_UUID).then(function (data) {
-              return data.getUint8(0);
-        });
-    };
-
-    setLightName(lightName){
-        lightName = util.stringToDecArray(lightName);
-        return this._writeCharacteristicValue(LIGHT_NAME_PUB_UUID, new Uint8Array(lightName));
-    };
-
-    getLightName(){
-        return this._readCharacteristicValue(LIGHT_NAME_PUB_UUID)
-      .then(this._decodeString);
-    };
-
-    setGroupName(groupName){
-        groupName = util.stringToDecArray(groupName);
-        return this._writeCharacteristicValue(GROUP_NAME_PUB_UUID, new Uint8Array(groupName));
-    };
-
-    getGroupName(){
-        return this._readCharacteristicValue(GROUP_NAME_PUB_UUID)
-      .then(this._decodeString);
-    };
-
-    setRoomName(roomName){
-        roomName = util.stringToDecArray(roomName);
-        return this._writeCharacteristicValue(ROOM_NAME_PUB_UUID, new Uint8Array(roomName));
-    };
-
-    getRoomName(){
-        return this._readCharacteristicValue(ROOM_NAME_PUB_UUID)
-      .then(this._decodeString);
-    };
-
-    getPowerConsume(){
-        return this._readCharacteristicValue(POWER_CONSUME_UUID)
-      .then(this._decodeString);
-    };
-
-    /* Utils */
-
-    _cacheCharacteristic(service, characteristicUuid) {
-      return service.getCharacteristic(characteristicUuid).then(function (characteristic) {
-        window.smartLight.characteristics.set(characteristicUuid, characteristic);
-      });
-    }
-
-    _readCharacteristicValue(characteristicUuid) {
-      var characteristic = this.characteristics.get(characteristicUuid);
-      return characteristic.readValue().then(function (value) {
-        value = value.buffer ? value : new DataView(value);
-        return value;
-      });
-    }
-
-    _writeCharacteristicValue(characteristicUuid, value) {
-      var characteristic = this.characteristics.get(characteristicUuid);
-      if (this._debug) {
-        console.debug('WRITE', characteristic.uuid, value);
-      }
-      return characteristic.writeValue(value);
-    }
-
-    _lightStatus(data){
-      if(data.getUint8(0) == 0){
-        return false;
-      }else{
-        return true;
-      }
-    }
-
-    _decodeString(data){
-      var value = '';
-      for (var i = 0; i < data.byteLength; i++) {
-        value = value + String.fromCharCode(data.getUint8(i));
-      };
-      value = value.replace (/\0000/g, '');
-      value = value.trim();
-      return value;
-    }
-  }
-
-  window.smartLight = new SmartLight();
-
-})();
-
-function Util()
-{
-    this.stringToDecArray = function(str){
-        var dec, i;
-        var dec_arr = [];
-        if(str){
-            for (i=0; i<str.length; i++) {
-                dec = str.charCodeAt(i).toString(10);
-                dec_arr.push(Number(dec));
+    SmartLight.prototype.writeData = function writeData(sendData, charac_type) {
+        if (charac_type == 'powerStatus' && this.lightStatusCharacteristic) {
+            if (sendData) {
+                var data = [0x01];
+            } else {
+                var data = [0x00];
             }
+            return this.lightStatusCharacteristic.writeValue(new Uint8Array(data));
+        } else if (charac_type == 'dimValue' && this.dimmerSettingCharacteristic) {
+            return this.dimmerSettingCharacteristic.writeValue(new Uint8Array([sendData]));
+        } else if (charac_type == 'lightName' && this.lightNameCharacteristic) {
+            return this.lightNameCharacteristic.writeValue(sendData.split('').map(function (c) {
+                return c.charCodeAt(0);
+            }));
+        } else if (charac_type == 'groupName' && this.groupNameCharacteristic) {
+            return this.groupNameCharacteristic.writeValue(sendData.split('').map(function (c) {
+                return c.charCodeAt(0);
+            }));
+        } else if (charac_type == 'roomName' && this.roomNameCharacteristic) {
+            return this.roomNameCharacteristic.writeValue(sendData.split('').map(function (c) {
+                return c.charCodeAt(0);
+            }));
         }
-        return dec_arr;
+
+        return Promise.reject();
+    }
+
+    SmartLight.prototype.disconnect = function disconnect() {
+        if (!this.bluetoothDevice) {
+            return Promise.reject();
+        }
+
+        var self = this;
+
+        return this.bluetoothDevice.disconnect()
+            .then(function () {
+                self.connected = false;
+                self.lightStatusCharacteristic = undefined;
+                self.dimmerSettingCharacteristic = undefined;
+                self.powerConsumeCharacteristic = undefined;
+                self.lightNameCharacteristic = undefined;
+                self.groupNameCharacteristic = undefined;
+                self.roomNameCharacteristic = undefined;
+
+                self.powerStatus = undefined;
+                self.dimValue = undefined;
+                self.powerConsumed = undefined;
+                self.lightName = undefined;
+                self.groupName = undefined;
+                self.roomName = undefined;
+
+                return Promise.resolve();
+            });
+
+    }
+
+    return SmartLight;
+
+}();
+
+if (window === undefined) {
+    module.exports.SmartLight = SmartLight;
+}
+
+function Util() {
+    this.a2hex = function (asci) {
+        var str = '';
+        for (var a = 0; a < asci.length; a++) {
+            str = str + asci.charCodeAt(a).toString(16);
+        }
+        return str;
     };
-    
+
     return this;
 }
+

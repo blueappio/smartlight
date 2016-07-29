@@ -1,68 +1,78 @@
 <!DOCTYPE html>
 <html>
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Smart Light WB</title>
-        <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/angular-material/0.9.7/angular-material.min.css'>
-        <link rel="stylesheet" href="style.css">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smart Light</title>
+    <link rel="stylesheet"
+          href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc4/angular-material.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
 
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular.min.js'></script>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-animate.min.js'></script>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-aria.min.js'></script>
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/angular-material/0.8.2/angular-material.min.js'></script>
-    <script src="https://blueappio.github.io/blueapp.io/blueapp.io.min.js"></script>
-    <script src="smartlight.js"></script>
-    <script src="app.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-animate.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-aria.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-messages.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc4/angular-material.min.js"></script>
 
-    <body ng-app="smartLight" class="thing">
-        <div ng-controller="mainController as main" md-theme-watch="true">
-            <div class="layout-wrap layout-row flex-100" layout="row" flex="100" layout-wrap="">
-                <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
-                    <md-input-container>
-                        <label>Light Name</label>
-                        <input type="text" ng-model="smartLight.lightName" ng-change="lightNameChange()">
-                    </md-input-container>
-                </div>
-                <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
-                    <md-input-container>
-                        <label>Room Name</label>
-                        <input type="text" ng-model="smartLight.roomName" ng-change="roomNameChange()">
-                    </md-input-container>
-                </div>
-            </div>
-            <div class="layout-wrap layout-row flex-100" layout="row" flex="100" layout-wrap="">
-                <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
-                    <md-input-container>
-                        <label>Group Name</label>
-                        <input type="text" ng-model="smartLight.groupName" ng-change="groupNameChange()">
-                    </md-input-container>
-                </div>
-                <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
-                    <md-input-container>
-                        <label>Power Consume</label>
-                        <input type="text" ng-model="smartLight.powerConsumed" ng-disabled="true" style="color:black;">
-                    </md-input-container>
-                </div>
-            </div>
-            <div class="layout-wrap layout-row flex-100" layout="row" flex="100" layout-wrap="">
-                <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
-                    <span>DIM</span>
-                    <md-slider min="0" max="255" ng-model="smartLight.dimValue" aria-label="red" id="red-slider" ng-value ="0" ng-change="dimSliderChange()" ng-disabled="smartLight.isConnect==false">
-                    </md-slider>
-                </div>
-                <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
-                    <md-list>
-                        <md-list-item>
-                            <p> Power Button : </p>
-                            <md-switch ng-model="smartLight.isOn" aria-label="Switch 1" ng-change="toggleSmartLight()" ng-disabled="smartLight.isConnect==false">
-                            </md-switch>
-                        </md-list-item>
-                    </md-list>
-                </div>
-            </div>
+<script src="//vensi.github.io/blueapp.io/latest/blueapp.io.min.js"></script>
+<script src="smartlight.js"></script>
+<script src="app.js"></script>
+
+<body ng-app="smartLight" class="thing">
+<div ng-controller="mainController as main" md-theme-watch="true">
+    <div class="layout-wrap layout-row flex-100" layout="row" flex="100" layout-wrap="">
+        <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
+            <md-input-container>
+                <label>Light Name</label>
+                <input type="text" ng-model="smartlight.lightName" ng-change="lightNameChange()">
+            </md-input-container>
         </div>
-    </body>
+        <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
+            <md-input-container>
+                <label>Room Name</label>
+                <input type="text" ng-model="smartlight.roomName" ng-change="roomNameChange()">
+            </md-input-container>
+        </div>
+    </div>
+    <div class="layout-wrap layout-row flex-100" layout="row" flex="100" layout-wrap="">
+        <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
+            <md-input-container>
+                <label>Group Name</label>
+                <input type="text" ng-model="smartlight.groupName" ng-change="groupNameChange()">
+            </md-input-container>
+        </div>
+        <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
+            <md-input-container>
+                <label>Power Consume</label>
+                <input type="text" ng-model="smartlight.powerConsumed" ng-disabled="true" style="color:black;">
+            </md-input-container>
+        </div>
+    </div>
+    <div class="layout-wrap layout-row flex-100" layout="row" flex="100" layout-wrap="">
+        <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
+            <span>DIM</span>
+            <md-slider min="0" max="255" ng-model="smartlight.dimValue" aria-label="red" id="red-slider" ng-value="0"
+                       ng-change="dimSliderChange()" ng-disabled="smartlight.connected==false">
+            </md-slider>
+        </div>
+        <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
+            <md-list>
+                <md-list-item>
+                    <p> Power Button : </p>
+                    <md-switch ng-model="smartlight.powerStatus" aria-label="Switch 1" ng-change="toggleSmartLight()"
+                               ng-disabled="smartlight.connected==false || powerChanged==false">
+                    </md-switch>
+                </md-list-item>
+            </md-list>
+        </div>
+    </div>
+    <div layout="row" layout-align="start start" ng-hide="smartlight.connected">
+        <md-button class="md-raised connect-btn" ng-click="onConnect()" style="top: 20px;">
+            Connect
+        </md-button>
+    </div>
+</div>
+</body>
 </html>
