@@ -4,7 +4,7 @@ var app;
         .config(function ($mdThemingProvider) {
             $mdThemingProvider.theme('default')
                 .primaryPalette('blue')
-                .accentPalette('blue-grey');
+                .accentPalette('indigo');
             $mdThemingProvider.theme('success-toast');
             $mdThemingProvider.theme('error-toast');
 
