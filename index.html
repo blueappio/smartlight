@@ -56,7 +56,7 @@
         <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">
             <span>DIM</span>
             <md-slider min="0" max="255" ng-model="smartlight.dimValue" aria-label="red" id="red-slider" ng-value="0"
-                       ng-change="dimSliderChange()" ng-disabled="smartlight.connected==false">
+                       ng-change="dimSliderChange()" ng-disabled="smartlight.powerStatus==false" style="cursor:pointer">
             </md-slider>
         </div>
         <div layout="column" flex="100" flex-gt-sm="50" class="layout-column flex-gt-sm-50 flex-100">

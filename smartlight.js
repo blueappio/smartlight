@@ -153,8 +153,10 @@ var SmartLight = function () {
     SmartLight.prototype.writeData = function writeData(sendData, charac_type) {
         if (charac_type == 'powerStatus' && this.lightStatusCharacteristic) {
             if (sendData) {
+                this.powerStatus = true;
                 var data = [0x01];
             } else {
+                this.powerStatus = false;
                 var data = [0x00];
             }
             return this.lightStatusCharacteristic.writeValue(new Uint8Array(data));
